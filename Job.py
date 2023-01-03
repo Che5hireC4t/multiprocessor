@@ -126,6 +126,13 @@ class Job(object):
 
 
     def append_normal_task(self, callable_: callable, arguments: tuple = tuple()) -> None:
+        """
+        @callable       callable            The address of a function to execute
+        @arguments      tuple = tuple()     The tuple of arguments of such a function.
+
+        Create a Task object with the function @callable and its arguments @arguments,
+        and append that task to the list of tasks to run.
+        """
         self.__tasks_to_do.append(Task(callable_, arguments))
         return
 
