@@ -41,6 +41,10 @@ This module provides both parallel and incremental execution capabilities, makin
 For detailed examples and further documentation, please refer to the docstrings of the respective classes and methods.
 """
 
+# This is just a memo for myself in order to handle versioning properly:
+# https://betterprogramming.pub/why-versioning-is-important-and-how-to-do-it-686ce13b854f?gi=81d210140bbf
+__version__ = '1.0.0'
+
 from .Task import Task
 from .Job import Job
 from .Multiprocessor import Multiprocessor
