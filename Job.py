@@ -1,115 +1,61 @@
-class Task(object):
-
-    __slots__ = ('__callable', '__arguments', '__return_value', '__exception_raised')
-
-    def __init__(self, callable_: callable, arguments: tuple = tuple()) -> None:
-        assert callable(callable_), f"'callable_' argument must be callable. However, is of type {type(callable_)}."
-        self.__callable = callable_
-        self.__arguments = tuple(arguments)
-        self.__return_value = None
-        self.__exception_raised = None
-        return
-
-    if __debug__:
-        def __repr__(self) -> str:
-            return f"{self.__class__.__name__}({self.__callable.__name__}, {self.__arguments})"
-
-
-
-
-#   ██████╗ ██████╗  ██████╗ ██████╗ ███████╗██████╗ ████████╗██╗ ███████╗███████╗
-#   ██╔══██╗██╔══██╗██╔═══██╗██╔══██╗██╔════╝██╔══██╗╚══██╔══╝██║ ██╔════╝██╔════╝
-#   ██████╔╝██████╔╝██║   ██║██████╔╝█████╗  ██████╔╝   ██║   ██║ █████╗  ███████╗
-#   ██╔═══╝ ██╔══██╗██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗   ██║   ██║ ██╔══╝  ╚════██║
-#   ██║     ██║  ██║╚██████╔╝██║     ███████╗██║  ██║   ██║   ██║ ███████╗███████║
-#   ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚══════╝╚══════╝
-
-    def __get_callable(self) -> callable:
-        return self.__callable
-
-    callable_ = property(fget=__get_callable, doc=f"{__get_callable.__doc__}")
-# ----------------------------------------------------------------------------------------------------------------------
-
-    if __debug__:
-        def __get_callable_name(self) -> str:
-            return self.__callable.__name__
-
-        callable_name = property(fget=__get_callable_name, doc=f"{__get_callable_name.__doc__}")
-# ----------------------------------------------------------------------------------------------------------------------
-
-    def __get_arguments(self) -> tuple:
-        return self.__arguments
-
-    arguments = property(fget=__get_arguments, doc=f"{__get_arguments.__doc__}")
-# ----------------------------------------------------------------------------------------------------------------------
-
-    def __get_return_value(self):
-        return self.__return_value
-
-    def __set_return_value(self, value) -> None:
-        self.__return_value = value
-        return
-
-    return_value = property\
-        (
-            fget=__get_return_value,
-            fset=__set_return_value,
-            doc=f"{__get_return_value.__doc__}\n\n{__set_return_value.__doc__}"
-        )
-# ----------------------------------------------------------------------------------------------------------------------
-
-    def __get_exception_raised(self) -> BaseException:
-        return self.__exception_raised
-
-    def __set_exception_raised(self, value: BaseException) -> None:
-        try:  # Ensure value is well an exception without using an if else block.
-            raise value
-        except value.__class__ as error:
-            self.__exception_raised = error
-        return
-
-    exception_raised = property\
-        (
-            fget=__get_exception_raised,
-            fset=__set_exception_raised,
-            doc=f"{__get_exception_raised.__doc__}\n\n{__set_exception_raised.__doc__}"
-        )
-# ----------------------------------------------------------------------------------------------------------------------
+from . import Task
 
 
 
 class Job(object):
     """
-    This class represents task to do. It is intended to schedule a sub-procedure in order
-    to be executed for instance by a sub-process.
+    A class that represents a job consisting of a list of tasks to execute.
+    This Job class provides a mechanism to schedule and manage a list of tasks to be run.
+    Additionally, it offers functionality to define exception handling and fallback tasks
+    should any of the primary tasks fail.
+
+    :ivar __tasks_to_do: The list of tasks to be executed.
+    :ivar __exceptions_to_catch: The exceptions that this job intends to handle.
+    :ivar __tasks_to_do_if_shit_happens: List of tasks to be executed if exceptions occur.
+    :ivar __ongoing_task: The task that is currently being executed.
 
 
+    Example 1:
 
-    ███████╗ ██╗      ██████╗ ████████╗ ███████╗
-    ██╔════╝ ██║     ██╔═══██╗╚══██╔══╝ ██╔════╝
-    ███████╗ ██║     ██║   ██║   ██║    ███████╗
-    ╚════██║ ██║     ██║   ██║   ██║    ╚════██║
-    ███████║ ███████╗╚██████╔╝   ██║    ███████║
-    ╚══════╝ ╚══════╝ ╚═════╝    ╚═╝    ╚══════╝
+    >>> def add(a, b) -> int:
+    ...     return a + b
 
-    __tasks_to_do                                         type            A class to instantiate
-    __exceptions_to_catch                                tuple           The arguments of @__class.__init__
-    __tasks_to_do_if_shit_happens                         OrderedDict     An ordered dictionary containing a series of
-    __ongoing_task
+    >>> def mul(a, b) -> int:
+    ...     return a * b
+
+    >>> job = Job()
+    >>> job.append_normal_task(add, (1, 1))
+    >>> job.append_normal_task(mul, (2, 3))
+    >>> job.run()
+    >>> completed_tasks = job.tasks_to_do
+    >>> [print(t.return_value) for t in completed_tasks]
+    2
+    6
 
 
+    Example 2:
 
+    >>> def divide_by_zero():
+    ...     return 1/0
 
-    ██████╗ ██████╗  ██████╗ ██████╗ ███████╗██████╗ ████████╗██╗ ███████╗███████╗
-    ██╔══██╗██╔══██╗██╔═══██╗██╔══██╗██╔════╝██╔══██╗╚══██╔══╝██║ ██╔════╝██╔════╝
-    ██████╔╝██████╔╝██║   ██║██████╔╝█████╗  ██████╔╝   ██║   ██║ █████╗  ███████╗
-    ██╔═══╝ ██╔══██╗██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗   ██║   ██║ ██╔══╝  ╚════██║
-    ██║     ██║  ██║╚██████╔╝██║     ███████╗██║  ██║   ██║   ██║ ███████╗███████║
-    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚══════╝╚══════╝
+    >>> def ask_forgiveness() -> str:
+    ...     return 'Oops, sorry!'
 
-    tasks_to_do                     -->     __tasks_to_do                       Read Only
-    tasks_to_do_if_shit_happens     -->     __tasks_to_do_if_shit_happens       Read Only
-    exceptions_to_catch             -->     __exceptions_to_catch               Read Only
+    >>> job = Job()
+    >>> job.append_normal_task(add, (1, 1))
+    >>> job.append_normal_task(divide_by_zero, tuple())
+    >>> job.append_normal_task(mul, (2, 3))
+    >>> job.append_exception_to_catch(ZeroDivisionError)
+    >>> job.append_forgiveness_task(ask_forgiveness, tuple())
+    >>> job.run()
+    >>> completed_tasks = job.tasks_to_do
+    >>> completed_error_tasks = job.tasks_to_do_if_shit_happens
+    >>> [print(t.return_value) for t in completed_tasks]
+    2
+    None
+    None
+    >>> [print(t.return_value) for t in completed_error_tasks]
+    'Oops, sorry!'
     """
 
     __slots__ = ('__tasks_to_do', '__exceptions_to_catch', '__tasks_to_do_if_shit_happens', '__ongoing_task')
@@ -117,6 +63,13 @@ class Job(object):
 
 
     def __init__(self) -> None:
+        """
+        Initialize a new Job instance.
+
+        This method sets up the initial state of the Job object by
+        preparing empty lists for tasks, exception handling, and fallback tasks.
+        It also initializes an attribute to keep track of the task currently being executed.
+        """
         self.__tasks_to_do = list()
         self.__exceptions_to_catch = list()
         self.__tasks_to_do_if_shit_happens = list()
@@ -125,13 +78,21 @@ class Job(object):
 
 
 
+
+#   ██████╗ ██╗   ██╗██████╗ ██╗     ██╗ ██████╗     ███╗   ███╗███████╗████████╗██╗  ██╗ ██████╗ ██████╗ ███████╗
+#   ██╔══██╗██║   ██║██╔══██╗██║     ██║██╔════╝     ████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔═══██╗██╔══██╗██╔════╝
+#   ██████╔╝██║   ██║██████╔╝██║     ██║██║          ██╔████╔██║█████╗     ██║   ███████║██║   ██║██║  ██║███████╗
+#   ██╔═══╝ ██║   ██║██╔══██╗██║     ██║██║          ██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██║   ██║██║  ██║╚════██║
+#   ██║     ╚██████╔╝██████╔╝███████╗██║╚██████╗     ██║ ╚═╝ ██║███████╗   ██║   ██║  ██║╚██████╔╝██████╔╝███████║
+#   ╚═╝      ╚═════╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝     ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝
+
+
     def append_normal_task(self, callable_: callable, arguments: tuple = tuple()) -> None:
         """
-        @callable       callable            The address of a function to execute
-        @arguments      tuple = tuple()     The tuple of arguments of such a function.
+        Add a standard task to the job's execution list.
 
-        Create a Task object with the function @callable and its arguments @arguments,
-        and append that task to the list of tasks to run.
+        :param callable_: The function or method to be executed.
+        :param arguments: Optional arguments for the callable.
         """
         self.__tasks_to_do.append(Task(callable_, arguments))
         return
@@ -139,25 +100,46 @@ class Job(object):
 
 
     def clear_normal_tasks(self) -> None:
+        """Purge all standard tasks from the job's execution list."""
         self.__tasks_to_do = list()
         return
 
+
+
     def append_forgiveness_task(self, callable_: callable, arguments: tuple = tuple()) -> None:
+        """
+        Add a fallback task to execute if any standard tasks raise exceptions.
+
+        These tasks serve as a 'Plan B', providing a means to attempt recovery or alternative actions
+        when things don't go as planned.
+
+        :param callable_: The function or method to be executed in case of an exception.
+        :param arguments: Optional arguments for the callable.
+        """
         self.__tasks_to_do_if_shit_happens.append(Task(callable_, arguments))
         return
 
 
 
     def clear_forgiveness_tasks(self) -> None:
+        """Purge all fallback tasks from the job's list."""
         self.__tasks_to_do_if_shit_happens = list()
         return
 
 
 
     def append_exception_to_catch(self, exception) -> None:
+        """
+        Designate exceptions that the job will handle.
+
+        This method defines which exceptions, when raised during the execution of tasks,
+        should trigger the fallback tasks.
+
+        :param exception: The exception type or a collection of exception types.
+        """
         if type(exception) in (list, tuple, set, frozenset):
             if not all(issubclass(e, BaseException) for e in exception):
-                raise TypeError('All the objects passed as argument must be subclasses of exception.')
+                raise TypeError('All the objects passed as argument must be subclasses of BaseException.')
             self.__exceptions_to_catch.extend(exception)
             return
         if issubclass(exception, BaseException):
@@ -168,12 +150,18 @@ class Job(object):
 
 
     def clear_exceptions(self) -> None:
+        """Purge all designated exceptions from the job's list."""
         self.__exceptions_to_catch = list()
-        return
 
 
 
     def run(self) -> None:
+        """
+        Execute all the standard tasks in sequence.
+
+        This method runs each task in the order they were added. If a task raises an exception
+        that the Job is set to handle, the fallback tasks will be triggered.
+        """
         for task in self.__tasks_to_do:
             self.__ongoing_task = task
             return_value = task.callable_(*task.arguments)
@@ -183,6 +171,17 @@ class Job(object):
 
 
     def ask_forgiveness(self, exception_raised: BaseException) -> None:
+        """
+        Handle an exception by executing all the fallback tasks.
+
+        When an exception is raised, this method can be called to run the fallback tasks
+        and attempt recovery or alternative actions.
+
+        The name of that method comes from the python "EAFP" principle
+        (Easier to Ask for Forgiveness than Permission).
+
+        :param exception_raised: The exception that was triggered.
+        """
         self.__ongoing_task.exception_raised = exception_raised
         for task in self.__tasks_to_do_if_shit_happens:
             return_value = task.callable_(*task.arguments)
@@ -191,29 +190,33 @@ class Job(object):
 
 
 
-    @staticmethod
-    def __do_nothing():
-        pass
+
+#   ██████╗  ██████╗   ██████╗  ██████╗  ███████╗ ██████╗ ████████╗ ██╗ ███████╗ ███████╗
+#   ██╔══██╗ ██╔══██╗ ██╔═══██╗ ██╔══██╗ ██╔════╝ ██╔══██╗╚══██╔══╝ ██║ ██╔════╝ ██╔════╝
+#   ██████╔╝ ██████╔╝ ██║   ██║ ██████╔╝ █████╗   ██████╔╝   ██║    ██║ █████╗   ███████╗
+#   ██╔═══╝  ██╔══██╗ ██║   ██║ ██╔═══╝  ██╔══╝   ██╔══██╗   ██║    ██║ ██╔══╝   ╚════██║
+#   ██║      ██║  ██║ ╚██████╔╝ ██║      ███████╗ ██║  ██║   ██║    ██║ ███████╗ ███████║
+#   ╚═╝      ╚═╝  ╚═╝  ╚═════╝  ╚═╝      ╚══════╝ ╚═╝  ╚═╝   ╚═╝    ╚═╝ ╚══════╝ ╚══════╝
 
 
-
-#   ██████╗ ██████╗  ██████╗ ██████╗ ███████╗██████╗ ████████╗██╗ ███████╗███████╗
-#   ██╔══██╗██╔══██╗██╔═══██╗██╔══██╗██╔════╝██╔══██╗╚══██╔══╝██║ ██╔════╝██╔════╝
-#   ██████╔╝██████╔╝██║   ██║██████╔╝█████╗  ██████╔╝   ██║   ██║ █████╗  ███████╗
-#   ██╔═══╝ ██╔══██╗██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗   ██║   ██║ ██╔══╝  ╚════██║
-#   ██║     ██║  ██║╚██████╔╝██║     ███████╗██║  ██║   ██║   ██║ ███████╗███████║
-#   ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚══════╝╚══════╝
-
-    def __get_normal_tasks(self) -> tuple:
+    def __get_normal_tasks(self) -> tuple[Task, ...]:
+        """
+        Retrieve all standard tasks currently in the job's execution list.
+        This property is read-only.
+        """
         return tuple(self.__tasks_to_do)
 
     tasks_to_do = property(fget=__get_normal_tasks, doc=f"{__get_normal_tasks.__doc__}")
 # ----------------------------------------------------------------------------------------------------------------------
 
-    def __get_tasks_if_shit_happens(self) -> tuple:
+    def __get_tasks_if_shit_happens(self) -> tuple[Task, ...]:
+        """
+        Retrieve all fallback tasks currently in the job's list.
+        This property is read-only.
+        """
         return tuple(self.__tasks_to_do_if_shit_happens)
 
-    tasks_to_do_if_shit_happens = property\
+    tasks_to_do_if_shit_happens = property \
         (
             fget=__get_tasks_if_shit_happens,
             doc=f"{__get_tasks_if_shit_happens.__doc__}"
@@ -221,6 +224,10 @@ class Job(object):
 # ----------------------------------------------------------------------------------------------------------------------
 
     def __get_exceptions(self) -> tuple:
+        """
+        Retrieve all exceptions that the job is set to handle.
+        This property is read-only.
+        """
         if len(self.__exceptions_to_catch) == 0:
             return BaseException,
         return tuple(self.__exceptions_to_catch)
