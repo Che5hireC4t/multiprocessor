@@ -1,4 +1,4 @@
-from Job import Job
+from . import Job
 
 
 
@@ -10,6 +10,9 @@ class Multiprocessor(object):
     a very powerful library for distributing procedures into concurrent sub-processes. But the
     counterpart is it may have unexpected side effects, and it may be difficult to debug: when
     the code of a child process crashes, it yields a huge stack trace.
+
+    Another problem is we may want to run pieces of code either in parallel or not, at will,
+    depending on if we have the ressources to do it or not.
 
     For that reason, we may want to run our sub-routines either in parallel, or incrementally
     inside the main process, but just by changing one boolean parameter. The treatment is different
@@ -25,9 +28,9 @@ class Multiprocessor(object):
 
     IMPORTANT NOTE: This class is intended to work with instances of the class Job
 
-    Example of use:
+    Example of use (This example has been tested and works):
 
-    >>> from NasaFramework.utils.multiprocessor.Job import Job
+    >>> import Job
     >>>
     >>> class Car(object):
     ...
@@ -39,36 +42,32 @@ class Multiprocessor(object):
     ...         print('VROOOOOOOOOM')
     ...         return
     ...
+    ...     def being_stuck_in_traffic_jams(self) -> None:
+    ...         raise OverflowError('Fucking jams')
+    ...
     ...     def show_off(self) -> None:
     ...         print('Yeaaah !')
     ...         return
     ...
-    ...     def honk_the_horn(self) -> None:
-    ...         print('BEEEP')
+    ...     def honk_and_curse(self) -> None:
+    ...         print('BEEEP!!!!!')
     ...         return
-    >>>
-    >>> job_1 = Job\
-    ...     (
-    ...         class_ = Car,
-    ...         init_arguments = ('red', 'Volkswagen'),
-    ...         methods_and_arguments = {Car.drive: (5.5, 10.4), Car.show_off: tuple()}
-    ...         exceptions_to_catch = (RuntimeError, OSError),
-    ...         methods_arguments_to_run_if_shit_happens = {Car.honk_the_horn: tuple()}
-    ...     )
-    >>>
-    >>> job_2 = Job\
-    ...     (
-    ...         class_ = Car,
-    ...         init_arguments = ('black', 'Mercedes'),
-    ...         methods_and_arguments = {Car.drive: (3.8, 11.2), Car.honk_the_horn: tuple()}
-    ...     )
-    >>>
-    >>> jobs = [job_1, job_2]
 
-    The following line runs both the jobs in parallel by spawning up to 2 processes:
-    >>> job_results_1 = Multiprocessor.run(jobs, parallelize=True, number_of_processes=2)
+    >>> j1, j2, j3 = Job(), Job(), Job()
+    >>> c1, c2, c3 = Car('Volkswagen', 'grey'), Car('Mercedes', 'black'), Car('Audi', 'white')
+    >>> for job, car in {j1: c1, j2: c2, j3: c3}.items():
+    ...     job.append_normal_task(car.drive, (10, 20))  # You don't have to put same values for each job.
+    ...     job.append_normal_task(car.show_off, tuple())
+    ...     job.append_normal_task(car.being_stuck_in_traffic_jams, tuple())
+    ...     job.append_exception_to_catch(OverflowError)
+    ...     job.append_forgiveness_task(car.honk_and_curse, tuple())
 
-    The following line runs both the jobs one by one in a for loop:
+    >>> jobs = (j1, j2, j3)
+
+    The following line runs all the jobs in parallel by spawning up to 3 processes:
+    >>> job_results_1 = Multiprocessor.run(jobs, parallelize=True, number_of_processes=3)
+
+    The following line runs both the jobs one by one in a for loop without spawning any new process:
     >>> job_results_2 = Multiprocessor.run(jobs, parallelize=False)
 
     At the end, you get the same results:
@@ -200,26 +199,6 @@ class Multiprocessor(object):
         try:
             job.run()
         except job.exceptions_to_catch as error:
+            print(error)
             job.ask_forgiveness(error)
         return job
-
-
-        # # Instantiation
-        # try:
-        #     instance = job.class_(*job.init_arguments)
-        # except job.exceptions_to_catch as error:
-        #     job.log_error(job.class_.__init__, error)
-        #     return job
-        #
-        # # Run all the methods one by one
-        # try:
-        #     for method, arguments in job.methods_and_arguments.items():
-        #         result = getattr(instance, method.__name__)(*arguments)  # Method is called by introspection
-        #         job.add_result(method, result)
-        # except job.exceptions_to_catch as error:
-        #     job.log_error(method, error)
-        #     for exception_method, exception_arguments in job.methods_arguments_to_run_if_shit_happens.items():
-        #         result = getattr(instance, exception_method.__name__)(*exception_arguments)
-        #         job.ask_forgiveness(exception_method, result)
-        #
-        # return job
