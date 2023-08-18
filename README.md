@@ -1,94 +1,121 @@
-# What is that?
+# Multiprocessor Module Documentation
 
-This repository is a python module for running repetitive and independent code snippets either incrementally in a for
-loop, or concurrently in dedicated processes, just by changing a boolean argument. This module is intended to increase
-the performances of the whole program, while keeping the possibility to run it step by step for debugging purposes.
+## Overview
 
-# Dependencies
 
-- multiprocessing module (`pip install --user --upgrade multiprocessing`)
-- python 3.3 or higher (because it uses the [starmap function](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.pool.Pool.starmap))
+The `multiprocessor` module provides utilities to easily manage and execute tasks in parallel or incrementally without
+hassle. It offers three primary classes: `Task`, `Job` and `Multiprocessor`.
 
-# How to use
+The `Task` class is mainly used internally and is used to describe a python callable, store its arguments and its
+return value, if any.
 
-Let's suppose 4 functions are defined:
-- nice_function(a, b)
-- super_function(c, d, e)
-- raise_zero_division_error()
-- i_am_sorry(f)
-```
->>> def nice_function(a, b) -> None:
-...     print(f"running nice_function with args {a} and {b}")
-...     return
-...
->>> def super_function(c, d, e) -> None:
-...     print(f"running super_function with args {c}, {d} and {e}")
-...     return
-...
->>> def raise_zero_division_error() -> None:
-...     _ = 1/0
-...     return
-...
->>> def i_am_sorry(f) -> None:
-...     print(f"I am sorry, with arg {f}")
-...     return
-...
-```
-Now, let's schedule jobs by appending callables with their arguments:
-```
->>> from multiprocessor import Job, Multiprocessor
->>>
->>> j1, j2, j3 = Job(), Job(), Job()
->>>
->>> j1.append_normal_task(nice_function, ("foo", "bar"))
->>>
->>> j2.append_normal_task(nice_function, ("bloob", "kamoulox"))
->>> j2.append_normal_task(super_function, ("charmander", "bulbasaur", "pikachu"))
->>>
->>> j3.append_normal_task(raise_zero_division_error)
->>> j3.append_exception_to_catch(ZeroDivisionError)
->>> j3.append_forgiveness_task(i_am_sorry, ("Running out of ideas",))
->>>
->>> jobs = (j1, j2, j3)
-```
-Now, all the jobs can be run either concurrently in dedicated processes:
-```
->>> finished_jobs = Multiprocessor.run(jobs, parallelize=True, number_of_processes=3)
-running nice_function with args foo and bar
-running nice_function with args bloob and kamoulox
-running super_function with args charmander, bulbasaur and pikachu
-I am sorry, with arg Running out of ideas
-```
-Or one by one through a for loop:
-```
-finished_jobs = Multiprocessor.run(jobs, parallelize=False)
-running nice_function with args foo and bar
-running nice_function with args bloob and kamoulox
-running super_function with args charmander, bulbasaur and pikachu
-I am sorry, with arg Running out of ideas
+The `Job` class lets users define a series of tasks with optional exception handling and fallback tasks objects.
+
+The `Multiprocessor` class allows these jobs to be executed either concurrently across multiple cores or incrementally
+within the main process.
+
+## Installation
+
+```bash
+git clone https://github.com/Che5hireC4t/multiprocessor.git
 ```
 
-# How to use (Details)
+## Key Features
 
-Here is the definition of the `Multiprocessor.run` method:
+1. **Flexible Parallelization**: With a single parameter switch, you can choose between parallel and incremental execution.
+2. **Exception Handling**: The `Job` class has built-in exception handling, allowing you to define fallback tasks for specific exceptions.
+3. **Memory Efficiency**: When running tasks incrementally, the multiprocessing library isn't imported, saving memory.
+4. **User-friendly Results Presentation**: Results are returned in a consistent format regardless of execution mode.
+
+## Basic Usage
+
+### Setup
+
+Let's assume you have the following class:
+
+```python
+class Car(object):
+
+    def __init__(self, brand: str, color: str) -> None:
+        self.__brand, self.__color = brand, color
+        return
+
+    def drive(self, distance: float, speed: float) -> None:
+        print('VROOOOOOOOOM')
+        return
+
+    def being_stuck_in_traffic_jams(self) -> None:
+        raise OverflowError('Fucking jams')
+
+    def show_off(self) -> None:
+        print('Yeaaah !')
+        return
+
+    def honk_and_curse(self) -> None:
+        print('BEEEP!!!!!')
+        return
 ```
-@classmethod
-def run(cls, jobs: (list, tuple), parallelize: bool = True, number_of_processes: int = 0) -> list:
-    if parallelize and len(jobs) > 1:
-        from multiprocessing import Pool, cpu_count
-        if number_of_processes <= 0:
-            number_of_processes = cpu_count()
-        mapped_arguments = [(job,) for job in jobs]
-        with Pool(number_of_processes) as swimming:  # Because it is the swimming Pool... hahaha !
-            jobs_done = swimming.starmap(cls._wrapper, mapped_arguments)
-        jobs = jobs_done  # Need to update, because jobs were updated into child processes. Not in the parent
-    else:
-        for job in jobs:
-            cls._wrapper(job)
-    return jobs  # cls.__set_up_results(jobs)
+
+### Defining Jobs
+
+To use this module, start by defining a series of tasks using the `Job` class:
+
+```python
+from multiprocessor import Job
+
+j1, j2, j3 = Job(), Job(), Job()
+c1, c2, c3 = Car('Volkswagen', 'grey'), Car('Mercedes', 'black'), Car('Audi', 'white')
+
+for job, car in {j1: c1, j2: c2, j3: c3}.items():
+    job.append_normal_task(car.drive, (10, 20))  # You don't have to put same values for each job.
+    job.append_normal_task(car.show_off, tuple())
+    job.append_normal_task(car.being_stuck_in_traffic_jams, tuple())
+    job.append_exception_to_catch(OverflowError)
+    job.append_forgiveness_task(car.honk_and_curse, tuple())
+
+jobs = (j1, j2, j3)
 ```
 
-# Limitations
+### Running Jobs
 
-It is currently not possible to redirect the return result of a job function to another function inside this job.
+You can run these jobs either in parallel or incrementally using the `Multiprocessor` class:
+
+```python
+from multiprocessor import Multiprocessor
+
+# The following line runs all the jobs in parallel by spawning up to 3 processes:
+job_results_1 = Multiprocessor.run(jobs, parallelize=True, number_of_processes=3)
+
+# The following line runs both the jobs one by one in a for loop without spawning any new process:
+job_results_2 = Multiprocessor.run(jobs, parallelize=False)
+
+# At the end, you get the same results:
+job_results_1 == job_results_2  # True
+```
+
+## Examples
+
+Detailed examples can be found within the module docstrings. Here's a brief example:
+
+```python
+from multiprocessor import Job, Multiprocessor
+
+def task_function(a, b):
+    return a + b
+
+job = Job()
+job.append_normal_task(task_function, (1, 2))
+results = Multiprocessor.run([job], parallelize=True)
+```
+
+## Important Notes
+
+1. The `Multiprocessor` class is designed not to be instantiated. Instead, it offers class and static methods for direct usage.
+2. Always ensure the callable functions provided to the `Job` class do not have any side effects or shared states to ensure thread-safety.
+3. When using the multiprocessing library, make sure to guard your main execution using `if __name__ == '__main__':`.
+4. It is currently not possible to redirect the return result of a job function to another function inside this job.
 Each function in a job must be independent.
+
+## License
+
+This module is licensed under the GPL-3.0 License. Please see the `LICENSE` file for more information.
