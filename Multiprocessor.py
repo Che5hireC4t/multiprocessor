@@ -34,22 +34,22 @@ class Multiprocessor(object):
     >>>
     >>> class Car(object):
     ...
-    ...     def __init__(self, brand: str, color: str) -> None:
-    ...         self.__brand, self.__color = brand, color
+    ...     def __init__(cls, brand: str, color: str) -> None:
+    ...         cls.__brand, cls.__color = brand, color
     ...         return
     ...
-    ...     def drive(self, distance: float, speed: float) -> None:
+    ...     def drive(cls, distance: float, speed: float) -> None:
     ...         print('VROOOOOOOOOM')
     ...         return
     ...
-    ...     def being_stuck_in_traffic_jams(self) -> None:
+    ...     def being_stuck_in_traffic_jams(cls) -> None:
     ...         raise OverflowError('Fucking jams')
     ...
-    ...     def show_off(self) -> None:
+    ...     def show_off(cls) -> None:
     ...         print('Yeaaah !')
     ...         return
     ...
-    ...     def honk_and_curse(self) -> None:
+    ...     def honk_and_curse(cls) -> None:
     ...         print('BEEEP!!!!!')
     ...         return
 
@@ -108,7 +108,7 @@ class Multiprocessor(object):
                                                         Ignored if @parallelize = False
                                                         If 0 or negative, then = number of cpu cores.
 
-        @return:                        list            A list on the results of self.__jobs, on the form:
+        @return:                        list            A list on the results of cls.__jobs, on the form:
                                                         [(job.results, job.results_if_shit_happened)]
 
         This method triggers the execution of the jobs. Either they are distributed in subprocesses and
@@ -147,7 +147,7 @@ class Multiprocessor(object):
         """
         @param jobs:        list            A list of instances of the Job class
 
-        @return:            list            A list on the results of self.__jobs, on the form:
+        @return:            list            A list on the results of cls.__jobs, on the form:
                                             [(job.results, job.results_if_shit_happened)]
 
         Take the job results, and present them in a user-readable list.
