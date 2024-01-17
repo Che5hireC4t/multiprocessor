@@ -83,10 +83,10 @@ You can run these jobs either in parallel or incrementally using the `Multiproce
 ```python
 from multiprocessor import Multiprocessor
 
-# The following line runs all the jobs in parallel by spawning up to 3 processes:
+# The following line runs all the job_generator in parallel by spawning up to 3 processes:
 job_results_1 = Multiprocessor.run(jobs, parallelize=True, number_of_processes=3)
 
-# The following line runs both the jobs one by one in a for loop without spawning any new process:
+# The following line runs both the job_generator one by one in a for loop without spawning any new process:
 job_results_2 = Multiprocessor.run(jobs, parallelize=False)
 
 # At the end, you get the same results:

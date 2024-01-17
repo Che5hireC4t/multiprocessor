@@ -1,5 +1,5 @@
 from . import Job
-
+from . import Results
 
 
 class Multiprocessor(object):
@@ -20,8 +20,8 @@ class Multiprocessor(object):
     library, but if we want an incremental processing, a simple for loop is enough.
 
     As all this stuff is quite complicated, this dedicated module has been created. The main idea is
-    to define a series of jobs (see Job class of this module), and pass it to the Multiprocessor run method.
-    The parameters of the run method allow to either distribute the jobs into concurrent processes, or
+    to define a series of job_generator (see Job class of this module), and pass it to the Multiprocessor run method.
+    The parameters of the run method allow to either distribute the job_generator into concurrent processes, or
     run them incrementally in a for loop.
 
     If run incrementally, the multiprocessing ligrary is not imported, which saves memory.
@@ -62,18 +62,20 @@ class Multiprocessor(object):
     ...     job.append_exception_to_catch(OverflowError)
     ...     job.append_forgiveness_task(car.honk_and_curse, tuple())
 
-    >>> jobs = (j1, j2, j3)
+    >>> job_generator = (j1, j2, j3)
 
-    The following line runs all the jobs in parallel by spawning up to 3 processes:
-    >>> job_results_1 = Multiprocessor.run(jobs, parallelize=True, number_of_processes=3)
+    The following line runs all the job_generator in parallel by spawning up to 3 processes:
+    >>> job_results_1 = Multiprocessor.run(job_generator, parallelize=True, number_of_processes=3)
 
-    The following line runs both the jobs one by one in a for loop without spawning any new process:
-    >>> job_results_2 = Multiprocessor.run(jobs, parallelize=False)
+    The following line runs both the job_generator one by one in a for loop without spawning any new process:
+    >>> job_results_2 = Multiprocessor.run(job_generator, parallelize=False)
 
     At the end, you get the same results:
     >>> job_results_1 == job_results_2
     True
     """
+
+    __GENERATOR = type((_ for _ in range(0)))
 
 
     def __new__(cls) -> type:
@@ -99,10 +101,16 @@ class Multiprocessor(object):
 
 
     @classmethod
-    def run(cls, jobs: (list, tuple), parallelize: bool = True, number_of_processes: int = 0) -> list:
+    def run\
+            (
+                cls,
+                job_generator: __GENERATOR[Job],
+                parallelize: bool = True,
+                number_of_processes: int = 0
+            ) -> tuple[Results | None]:
         """
         @param cls:                     type            Address of the Multiprocessor class (implicit parameter)
-        @param jobs:                    list            A list of instances of the Job class
+        @param job_generator:           __GENERATOR     A generator of jobs to run
         @param parallelize:             bool = True     Should the jobs be distributed into sub-processes?
         @param number_of_processes:     int = 0         Max number of processes to spawn.
                                                         Ignored if @parallelize = False
@@ -118,18 +126,20 @@ class Multiprocessor(object):
         note: If there is only 1 job to do in the @jobs list parameter, this job is done in the main procedure
         without spawning a dedicated process, even if @parallelize is set to True
         """
-        if parallelize and len(jobs) > 1:
+        if parallelize:
             from multiprocessing import Pool, cpu_count
             if number_of_processes <= 0:
                 number_of_processes = cpu_count()
-            mapped_arguments = [(job,) for job in jobs]
+            mapped_arguments = [(job,) for job in job_generator]
             with Pool(number_of_processes) as swimming:  # Because it is the swimming Pool... hahaha !
-                jobs_done = swimming.starmap(cls._wrapper, mapped_arguments)
-            jobs = jobs_done  # Need to update, because jobs were updated into child processes. Not in the parent
+                results = swimming.starmap(cls._wrapper, mapped_arguments)
+            return tuple(results)
         else:
-            for job in jobs:
-                cls._wrapper(job)
-        return jobs  # cls.__set_up_results(jobs)
+            results = list()
+            for job in job_generator:
+                result = cls._wrapper(job)
+                results.append(result)
+        return tuple(results)
 
 
 
@@ -171,7 +181,7 @@ class Multiprocessor(object):
 
 
     @staticmethod
-    def _wrapper(job: Job) -> Job:
+    def _wrapper(job: Job) -> Results | None:
         """
         @param job:         Job         An instance of the class Job
 
@@ -179,7 +189,7 @@ class Multiprocessor(object):
 
         This method executes in practice the procedure described in a Job instance.
         Normally, instances of Job contains a result section so in theory, we don't need
-        to return anything. But in the case that jobs are run into subprocesses, the Job
+        to return anything. But in the case that job_generator are run into subprocesses, the Job
         instances are updated into child processes, not in the parent one. If we don't
         return the updated instance (to the parent process), their results will be lost.
 
@@ -201,4 +211,12 @@ class Multiprocessor(object):
         except job.exceptions_to_catch as error:
             print(error)
             job.ask_forgiveness(error)
-        return job
+        for task in job.tasks_to_do:
+            return_value = task.return_value
+            if isinstance(return_value, Results):
+                return return_value
+        for task in job.tasks_to_do_if_shit_happens:
+            return_value = task.return_value
+            if isinstance(return_value, Results):
+                return return_value
+        return None

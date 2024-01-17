@@ -18,7 +18,7 @@ execution in a single process. By switching a boolean parameter, users can decid
 should be executed, offering flexibility in terms of resources and debugging.
 
 Additionally, the `Multiprocessor` class is designed to work seamlessly with the `Job` class.
-Users can define a series of jobs and then pass them to the `Multiprocessor` for execution.
+Users can define a series of job_generator and then pass them to the `Multiprocessor` for execution.
 
 Main Components
 ---------------
@@ -31,7 +31,7 @@ Usage Examples:
 ---------------
 1. Define tasks using the `Job` class.
 2. Define whether tasks should be run in parallel or incrementally using the `Multiprocessor` class.
-3. Execute the jobs and retrieve the results.
+3. Execute the job_generator and retrieve the results.
 
 You can view a fully functional example in the docstring of `Multiprocessor` class
 
@@ -45,6 +45,7 @@ For detailed examples and further documentation, please refer to the docstrings 
 # https://betterprogramming.pub/why-versioning-is-important-and-how-to-do-it-686ce13b854f?gi=81d210140bbf
 __version__ = '1.0.0'
 
+from .Results import Results
 from .Task import Task
 from .Job import Job
 from .Multiprocessor import Multiprocessor
