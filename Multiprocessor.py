@@ -78,18 +78,6 @@ class Multiprocessor(object):
     __GENERATOR = type((_ for _ in range(0)))
 
 
-    def __new__(cls) -> type:
-        """
-        @param cls:         type        Address of the Multiprocessor class (implicit parameter)
-
-        @return:            type        The Multiprocessor class (not an object derived from it, but the class itself!)
-
-        This class is not meant to instantiate objects. returning the class itself if someone tries to
-        create a new instance.
-        """
-        return cls
-
-
 
 
 #   ██████╗ ██╗   ██╗██████╗ ██╗     ██╗ ██████╗     ███╗   ███╗███████╗████████╗██╗  ██╗ ██████╗ ██████╗ ███████╗
