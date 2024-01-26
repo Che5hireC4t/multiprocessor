@@ -93,7 +93,7 @@ class Multiprocessor(object):
     def __init__ \
             (
                 self,
-                job_generator: __GENERATOR[Job],
+                job_generator: __GENERATOR,
                 extractor_function: callable,
                 parallelize: bool = True,
                 number_of_processes: int = 0
