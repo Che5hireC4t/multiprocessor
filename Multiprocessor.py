@@ -75,6 +75,8 @@ class Multiprocessor(object):
     True
     """
 
+    __slots__ = ('__job_generator', '__parallelize', '__number_of_processes', '__result_extractor_function')
+
     __GENERATOR = type((_ for _ in range(0)))
 
 
