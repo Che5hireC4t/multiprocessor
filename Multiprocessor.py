@@ -90,6 +90,80 @@ class Multiprocessor(object):
 #   ╚═╝      ╚═════╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝     ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝
 
 
+    def __init__ \
+            (
+                self,
+                job_generator: __GENERATOR[Job],
+                extractor_function: callable,
+                parallelize: bool = True,
+                number_of_processes: int = 0
+            ) -> None:
+        """
+        Initialize the Multiprocessor object.
+
+        This method sets up the Multiprocessor with the necessary parameters
+        to handle job execution either in parallel or sequentially.
+
+        This constructor performs validation on the input arguments to ensure they meet the requirements for processing.
+        If the validation fails, it raises a TypeError with a detailed error message.
+
+        The `job_generator` must be an iterable of Job objects, `extractor_function` must be callable,
+        `parallelize` must be a boolean, and `number_of_processes` must be an integer.
+
+        :param job_generator: An iterable of Job objects, preferably a generator,
+                              that produces the jobs to be processed.
+        :type job_generator:  __GENERATOR[Job]
+
+
+        :param extractor_function: A callable that extracts results from the processed jobs.
+                                   This function should return a Result object.
+        :type extractor_function:  callable
+
+
+        :param parallelize: A boolean flag indicating whether to run the jobs in parallel (True) or sequentially (False)
+                            Defaults to True.
+        :type parallelize:  bool, optional
+
+
+        :param number_of_processes: The number of processes to use for parallel execution.
+                                    If set to 0, the number of processes is automatically determined. Default to 0.
+        :type number_of_processes:  int, optional
+
+
+        :raises TypeError: If the input arguments do not meet the expected types or requirements.
+
+
+
+        Example:
+            >>> job_generator = (job1, job2, job3)  # Where job1, job2, job3 are Job instances.
+            >>> extractor = lambda job: job.result  # An example extractor function.
+            >>> processor = Multiprocessor(job_generator, extractor, True, 4)
+        """
+        if hasattr(job_generator, '__iter__') \
+                and isinstance(parallelize, bool) \
+                and isinstance(number_of_processes, int) \
+                and callable(extractor_function):
+            self.__job_generator = job_generator
+            self.__parallelize = parallelize
+            self.__number_of_processes = number_of_processes
+            self.__result_extractor_function = extractor_function
+            return
+        problems = set()
+        if not hasattr(job_generator, '__iter__'):
+            problems.add('- job_generator must be an iterable of Jobs and preferably a generator.')
+        if not isinstance(parallelize, bool):
+            problems.add(f"- parallelize must be a boolean value. Got {type(parallelize).__name__} instead.")
+        if not isinstance(number_of_processes, int):
+            msg = f"- number_of_processes must be an integer value. Got {type(number_of_processes).__name__} instead."
+            problems.add(msg)
+        if not callable(extractor_function):
+            problems.add('- extractor_function must be a callable returning a Result object.')
+        n = "\n"
+        error_message = f"Error with input arguments. The following problems were raised:\n\n{n.join(problems)}"
+        raise TypeError(error_message)
+
+
+
     def run\
             (
                 self,
