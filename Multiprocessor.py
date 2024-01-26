@@ -164,20 +164,8 @@ class Multiprocessor(object):
 
 
 
-    def run\
-            (
-                self,
-                job_generator: __GENERATOR[Job],
-                parallelize: bool = True,
-                number_of_processes: int = 0
-            ) -> tuple[Results | None]:
+    def run(self) -> tuple[Results | None]:
         """
-        @param job_generator:           __GENERATOR     A generator of jobs to run
-        @param parallelize:             bool = True     Should the jobs be distributed into sub-processes?
-        @param number_of_processes:     int = 0         Max number of processes to spawn.
-                                                        Ignored if @parallelize = False
-                                                        If 0 or negative, then = number of cpu cores.
-
         @return:                        list            A list on the results of cls.__jobs, on the form:
                                                         [(job.results, job.results_if_shit_happened)]
 
@@ -186,19 +174,19 @@ class Multiprocessor(object):
         process through a for loop.
 
         note: If there is only 1 job to do in the @jobs list parameter, this job is done in the main procedure
-        without spawning a dedicated process, even if @parallelize is set to True
+        without spawning a dedicated process, even if self.__parallelize is set to True
         """
-        if parallelize:
+        if self.__parallelize:
             from multiprocessing import Pool, cpu_count
-            if number_of_processes <= 0:
+            if self.__number_of_processes <= 0:
                 number_of_processes = cpu_count()
-            mapped_arguments = [(job,) for job in job_generator]
+            mapped_arguments = [(job,) for job in self.__job_generator]
             with Pool(number_of_processes) as swimming:  # Because it is the swimming Pool... hahaha !
                 results = swimming.starmap(self._wrapper, mapped_arguments)
             return tuple(results)
         else:
             results = list()
-            for job in job_generator:
+            for job in self.__job_generator:
                 result = self._wrapper(job)
                 results.append(result)
         return tuple(results)
