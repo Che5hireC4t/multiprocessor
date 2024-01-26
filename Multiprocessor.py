@@ -88,16 +88,14 @@ class Multiprocessor(object):
 #   ╚═╝      ╚═════╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝     ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝
 
 
-    @classmethod
     def run\
             (
-                cls,
+                self,
                 job_generator: __GENERATOR[Job],
                 parallelize: bool = True,
                 number_of_processes: int = 0
             ) -> tuple[Results | None]:
         """
-        @param cls:                     type            Address of the Multiprocessor class (implicit parameter)
         @param job_generator:           __GENERATOR     A generator of jobs to run
         @param parallelize:             bool = True     Should the jobs be distributed into sub-processes?
         @param number_of_processes:     int = 0         Max number of processes to spawn.
@@ -120,12 +118,12 @@ class Multiprocessor(object):
                 number_of_processes = cpu_count()
             mapped_arguments = [(job,) for job in job_generator]
             with Pool(number_of_processes) as swimming:  # Because it is the swimming Pool... hahaha !
-                results = swimming.starmap(cls._wrapper, mapped_arguments)
+                results = swimming.starmap(self._wrapper, mapped_arguments)
             return tuple(results)
         else:
             results = list()
             for job in job_generator:
-                result = cls._wrapper(job)
+                result = self._wrapper(job)
                 results.append(result)
         return tuple(results)
 
