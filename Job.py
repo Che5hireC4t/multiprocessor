@@ -1,4 +1,5 @@
 from . import Task
+from . import Results
 
 
 
@@ -58,7 +59,14 @@ class Job(object):
     'Oops, sorry!'
     """
 
-    __slots__ = ('__tasks_to_do', '__exceptions_to_catch', '__tasks_to_do_if_shit_happens', '__ongoing_task')
+    __slots__ = \
+        (
+            '__tasks_to_do',
+            '__exceptions_to_catch',
+            '__tasks_to_do_if_shit_happens',
+            '__ongoing_task',
+            '__result_extraction_function'
+        )
 
 
 
@@ -167,6 +175,14 @@ class Job(object):
             return_value = task.callable_(*task.arguments)
             task.return_value = return_value
         return
+
+
+
+    def extract_results(self) -> Results:
+        results = Results()
+        for task in self.__tasks_to_do:
+            setattr(results, task.callable_.__name__, task.return_value)
+        return results
 
 
 
