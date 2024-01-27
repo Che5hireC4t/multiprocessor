@@ -164,7 +164,7 @@ class Multiprocessor(object):
 
 
 
-    def run(self) -> tuple[Results | None]:
+    def run(self) -> tuple[Results | None, ...]:
         """
         @return:                        list            A list on the results of cls.__jobs, on the form:
                                                         [(job.results, job.results_if_shit_happened)]
@@ -180,6 +180,8 @@ class Multiprocessor(object):
             from multiprocessing import Pool, cpu_count
             if self.__number_of_processes <= 0:
                 number_of_processes = cpu_count()
+            else:
+                number_of_processes = self.__number_of_processes
             mapped_arguments = [(job,) for job in self.__job_generator]
             with Pool(number_of_processes) as swimming:  # Because it is the swimming Pool... hahaha !
                 results = swimming.starmap(self._wrapper, mapped_arguments)
@@ -261,12 +263,4 @@ class Multiprocessor(object):
         except job.exceptions_to_catch as error:
             print(error)
             job.ask_forgiveness(error)
-        for task in job.tasks_to_do:
-            return_value = task.return_value
-            if isinstance(return_value, Results):
-                return return_value
-        for task in job.tasks_to_do_if_shit_happens:
-            return_value = task.return_value
-            if isinstance(return_value, Results):
-                return return_value
-        return None
+        return job.extract_results()
